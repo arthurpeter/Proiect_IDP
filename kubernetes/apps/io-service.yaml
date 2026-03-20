@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: io-service
+spec:
+  ports:
+    - port: 8000
+  selector:
+    app: io-service
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: io-service
+spec:
+  selector:
+    matchLabels:
+      app: io-service
+  template:
+    metadata:
+      labels:
+        app: io-service
+    spec:
+      containers:
+      - name: io-service
+        image: arthurp2003/remailder-worker:latest
+        envFrom:
+        - secretRef:
+            name: postgres-secrets
+        ports:
+        - containerPort: 8000
