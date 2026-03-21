@@ -59,14 +59,16 @@ async def schedule_email(
                 routing_key="db_tasks"
             )
 
-            await channel.declare_queue(
-                "delayed_emails",
-                durable=True,
-                arguments={
-                    "x-dead-letter-exchange": "",
-                    "x-dead-letter-routing-key": "send_emails" 
-                }
+            delayed_exchange = await channel.declare_exchange(
+                name="delayed_exchange",
+                type="x-delayed-message",
+                arguments={"x-delayed-type": "direct"},
+                durable=True
             )
+
+            queue = await channel.declare_queue("send_emails", durable=True)
+            
+            await queue.bind(delayed_exchange, routing_key="send_emails")
 
             email_job_msg = {
                 "user_id": x_user_id,
@@ -75,14 +77,12 @@ async def schedule_email(
                 "body": payload.body
             }
 
-            expiration_td = timedelta(milliseconds=delay_ms)
-
-            await channel.default_exchange.publish(
+            await delayed_exchange.publish(
                 aio_pika.Message(
                     body=json.dumps(email_job_msg).encode(),
-                    expiration=expiration_td
+                    headers={"x-delay": delay_ms} 
                 ),
-                routing_key="delayed_emails"
+                routing_key="send_emails"
             )
 
         return {

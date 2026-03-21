@@ -5,7 +5,7 @@ from sqlalchemy import select
 from .database import AsyncSessionLocal
 from .models import EmailLog
 from .config import settings
-from datetime import datetime
+from datetime import datetime, timezone
 
 async def process_message(message: aio_pika.IncomingMessage):
     async with message.process():
@@ -20,7 +20,7 @@ async def process_message(message: aio_pika.IncomingMessage):
                 scheduled_dt = None
                 if scheduled_str:
                     parsed_dt = datetime.fromisoformat(scheduled_str.replace('Z', '+00:00'))
-                    scheduled_dt = parsed_dt.astimezone(datetime.timezone.utc).replace(tzinfo=None)
+                    scheduled_dt = parsed_dt.astimezone(timezone.utc).replace(tzinfo=None)
                 
                 new_log = EmailLog(
                     id_user=body.get("user_id"),
