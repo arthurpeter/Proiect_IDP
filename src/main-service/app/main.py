@@ -1,6 +1,6 @@
 import json
 import asyncio
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from contextlib import asynccontextmanager
 from pydantic import BaseModel
 from fastapi import FastAPI, Header, HTTPException
@@ -32,9 +32,13 @@ async def schedule_email(
     x_user_id: int = Header(..., alias="X-User-Id", description="ID of the user")
 ):
     now = datetime.now(timezone.utc)
-    delay_ms = int((payload.scheduled_at - now).total_seconds() * 1000)
     
-    # If time is in the past, send immediately
+    scheduled = payload.scheduled_at
+    if scheduled.tzinfo is None:
+        scheduled = scheduled.replace(tzinfo=timezone.utc)
+        
+    delay_ms = int((scheduled - now).total_seconds() * 1000)
+    
     if delay_ms < 0:
         delay_ms = 0 
 
@@ -43,7 +47,6 @@ async def schedule_email(
         async with connection:
             channel = await connection.channel()
 
-            # 1. Notify IO-Service to register the DB intent as "pending"
             create_msg = {
                 "action": "create",
                 "user_id": x_user_id,
@@ -56,13 +59,12 @@ async def schedule_email(
                 routing_key="db_tasks"
             )
 
-            # 2. Setup the "waiting room" queue (DLX logic)
             await channel.declare_queue(
                 "delayed_emails",
                 durable=True,
                 arguments={
                     "x-dead-letter-exchange": "",
-                    "x-dead-letter-routing-key": "send_emails" # Where to send when time expires
+                    "x-dead-letter-routing-key": "send_emails" 
                 }
             )
 
@@ -73,11 +75,12 @@ async def schedule_email(
                 "body": payload.body
             }
 
-            # 3. Publish to delayed_emails queue with an expiration TTL
+            expiration_td = timedelta(milliseconds=delay_ms)
+
             await channel.default_exchange.publish(
                 aio_pika.Message(
                     body=json.dumps(email_job_msg).encode(),
-                    expiration=str(delay_ms) if delay_ms > 0 else None
+                    expiration=expiration_td
                 ),
                 routing_key="delayed_emails"
             )
