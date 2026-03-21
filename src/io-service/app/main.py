@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text, select
 from contextlib import asynccontextmanager
 from .worker import start_rabbitmq_consumer
-from .models import User
+from .models import User, EmailLog
 from .database import engine, Base, get_db
 from pydantic import BaseModel
 
@@ -107,5 +107,28 @@ async def get_user_by_email(email: str, db: AsyncSession = Depends(get_db)):
         "password_hash": user.password_hash
     }
 
+@app.delete("/users/{email}")
+async def delete_user(email: str, db: AsyncSession = Depends(get_db)):
+    """
+    Delete a user by email. This will also cascade delete all associated email logs.
+    """
+    query = select(User).where(User.email == email)
+    result = await db.execute(query)
+    user = result.scalar_one_or_none()
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    await db.delete(user)
+    await db.commit()
+    
+    return {"detail": "User deleted successfully"}
+
 # --------- Endpoints for email logs management ---------
 
+@app.get("/logs/{user_id}")
+async def get_user_logs(user_id: int, db: AsyncSession = Depends(get_db)):
+    """Retrieve all email logs for a specific user ID."""
+    query = select(EmailLog).where(EmailLog.id_user == user_id)
+    result = await db.execute(query)
+    return result.scalars().all()

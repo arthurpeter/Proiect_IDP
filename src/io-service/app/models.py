@@ -5,7 +5,7 @@ import datetime
 
 class User(Base):
     __tablename__ = "users"
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True)
     email = Column(String, unique=True, index=True, nullable=False)
     password_hash = Column(String, nullable=False)
     
@@ -13,7 +13,7 @@ class User(Base):
 
 class EmailLog(Base):
     __tablename__ = "email_logs"
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True)
     id_user = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     recipient = Column(String, nullable=False)
     subject = Column(String)

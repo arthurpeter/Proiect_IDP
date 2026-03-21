@@ -87,13 +87,19 @@ kubectl apply -f kubernetes/infra/postgres-pvc.yaml
 kubectl apply -f kubernetes/infra/postgres.yaml
 kubectl apply -f kubernetes/infra/adminer.yaml
 kubectl apply -f kubernetes/infra/rabbitmq.yaml
+sleep 3
 kubectl apply -f kubernetes/apps/io-service.yaml
 kubectl rollout restart deployment io-service
+sleep 3
+kubectl apply -f kubernetes/apps/main-service.yaml
+kubectl rollout restart deployment main-service
 
 # 10. Așteptare și Port-forward
 echo "⏳ Așteptare Pod-uri..."
 kubectl wait --for=condition=ready pod -l app=io-service --timeout=180s
+kubectl wait --for=condition=ready pod -l app=main-service --timeout=180s
 kubectl port-forward svc/io-service 8000:8000 > /dev/null 2>&1 &
+kubectl port-forward svc/main-service 8001:8001 > /dev/null 2>&1 &
 kubectl port-forward svc/postgres-db 5432:5432 > /dev/null 2>&1 &
 kubectl port-forward svc/rabbitmq-service 15672:15672 > /dev/null 2>&1 &
 kubectl port-forward svc/adminer-service 8080:8080 > /dev/null 2>&1 &
