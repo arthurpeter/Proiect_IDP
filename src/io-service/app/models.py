@@ -8,6 +8,7 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True, index=True, nullable=False)
     password_hash = Column(String, nullable=False)
+    
     email_logs = relationship("EmailLog", back_populates="user", cascade="all, delete-orphan")
 
 class EmailLog(Base):
@@ -17,7 +18,9 @@ class EmailLog(Base):
     recipient = Column(String, nullable=False)
     subject = Column(String)
     status = Column(String)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.datetime.now)
+    scheduled_at = Column(DateTime, nullable=True)
+
     user = relationship("User", back_populates="email_logs")
 
     

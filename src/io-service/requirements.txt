@@ -3,3 +3,4 @@ uvicorn==0.42.0
 sqlalchemy==2.0.48
 asyncpg==0.31.0
 pydantic-settings==2.13.1
+aio-pika==9.6.1
