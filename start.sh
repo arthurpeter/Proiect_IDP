@@ -85,6 +85,7 @@ kubectl create secret generic postgres-secrets --from-env-file=.env
 # 9. Aplicare Manifeste K8s
 kubectl apply -f kubernetes/infra/postgres-pvc.yaml
 kubectl apply -f kubernetes/infra/postgres.yaml
+kubectl apply -f kubernetes/infra/adminer.yaml
 kubectl apply -f kubernetes/infra/rabbitmq.yaml
 kubectl apply -f kubernetes/apps/io-service.yaml
 kubectl rollout restart deployment io-service
@@ -95,5 +96,6 @@ kubectl wait --for=condition=ready pod -l app=io-service --timeout=180s
 kubectl port-forward svc/io-service 8000:8000 > /dev/null 2>&1 &
 kubectl port-forward svc/postgres-db 5432:5432 > /dev/null 2>&1 &
 kubectl port-forward svc/rabbitmq-service 15672:15672 > /dev/null 2>&1 &
+kubectl port-forward svc/adminer-service 8080:8080 > /dev/null 2>&1 &
 
 echo "✨ Setup finalizat!"

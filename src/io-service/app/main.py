@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager
 from .worker import start_rabbitmq_consumer
 from .models import User
 from .database import engine, Base, get_db
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -56,7 +56,7 @@ async def db_check(db: AsyncSession = Depends(get_db)):
 
 class UserCreate(BaseModel):
     """Schema for creating a new user with a pre-hashed password."""
-    email: EmailStr
+    email: str
     password_hash: str
 
 class UserResponse(BaseModel):
