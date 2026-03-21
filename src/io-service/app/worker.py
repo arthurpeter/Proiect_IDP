@@ -19,7 +19,8 @@ async def process_message(message: aio_pika.IncomingMessage):
                 scheduled_str = body.get("scheduled_at")
                 scheduled_dt = None
                 if scheduled_str:
-                    scheduled_dt = datetime.fromisoformat(scheduled_str.replace('Z', '+00:00'))
+                    parsed_dt = datetime.fromisoformat(scheduled_str.replace('Z', '+00:00'))
+                    scheduled_dt = parsed_dt.astimezone(datetime.timezone.utc).replace(tzinfo=None)
                 
                 new_log = EmailLog(
                     id_user=body.get("user_id"),
