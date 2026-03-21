@@ -1,19 +1,90 @@
-from fastapi import FastAPI
-import httpx
+import json
+import asyncio
+from datetime import datetime, timezone
+from contextlib import asynccontextmanager
+from pydantic import BaseModel
+from fastapi import FastAPI, Header, HTTPException
 import aio_pika
-import os
 
-app = FastAPI(title="Remailder Main Manager")
+from .config import settings
+from .worker import email_consumer
 
-IO_SERVICE_URL = "http://io-service:8000"
+# --- FastAPI Setup ---
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    worker_task = asyncio.create_task(email_consumer())
+    yield
+    worker_task.cancel()
 
-@app.get("/")
-async def root():
-    return {"message": "Main Manager is running"}
+app = FastAPI(title="Remailder Main Manager", lifespan=lifespan)
 
-@app.get("/test-io")
-async def test_io():
-    """Test if Main-Service can talk to IO-Service inside K8s."""
-    async with httpx.AsyncClient() as client:
-        response = await client.get(f"{IO_SERVICE_URL}/health")
-    return response.json()
+# --- Routes ---
+
+class EmailRequest(BaseModel):
+    to: str
+    subject: str
+    body: str
+    scheduled_at: datetime
+
+@app.post("/schedule")
+async def schedule_email(
+    payload: EmailRequest,
+    x_user_id: int = Header(..., alias="X-User-Id", description="ID of the user")
+):
+    now = datetime.now(timezone.utc)
+    delay_ms = int((payload.scheduled_at - now).total_seconds() * 1000)
+    
+    # If time is in the past, send immediately
+    if delay_ms < 0:
+        delay_ms = 0 
+
+    try:
+        connection = await aio_pika.connect_robust(settings.RABBITMQ_URL)
+        async with connection:
+            channel = await connection.channel()
+
+            # 1. Notify IO-Service to register the DB intent as "pending"
+            create_msg = {
+                "action": "create",
+                "user_id": x_user_id,
+                "to": payload.to,
+                "subject": payload.subject,
+                "scheduled_at": payload.scheduled_at.isoformat()
+            }
+            await channel.default_exchange.publish(
+                aio_pika.Message(body=json.dumps(create_msg).encode()),
+                routing_key="db_tasks"
+            )
+
+            # 2. Setup the "waiting room" queue (DLX logic)
+            await channel.declare_queue(
+                "delayed_emails",
+                durable=True,
+                arguments={
+                    "x-dead-letter-exchange": "",
+                    "x-dead-letter-routing-key": "send_emails" # Where to send when time expires
+                }
+            )
+
+            email_job_msg = {
+                "user_id": x_user_id,
+                "to": payload.to,
+                "subject": payload.subject,
+                "body": payload.body
+            }
+
+            # 3. Publish to delayed_emails queue with an expiration TTL
+            await channel.default_exchange.publish(
+                aio_pika.Message(
+                    body=json.dumps(email_job_msg).encode(),
+                    expiration=str(delay_ms) if delay_ms > 0 else None
+                ),
+                routing_key="delayed_emails"
+            )
+
+        return {
+            "message": "Email scheduled successfully",
+            "delay_ms": delay_ms
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

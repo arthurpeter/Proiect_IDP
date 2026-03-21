@@ -24,5 +24,8 @@ spec:
       containers:
       - name: main-service
         image: arthurp2003/remailder-manager:latest
+        envFrom:
+        - secretRef:
+            name: postgres-secrets
         ports:
         - containerPort: 8001
