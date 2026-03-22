@@ -21,6 +21,10 @@ spec:
       labels:
         app: main-service
     spec:
+      initContainers:
+      - name: wait-for-rabbitmq
+        image: busybox:1.28
+        command: ['sh', '-c', "until nc -zv rabbitmq-service 5672; do echo waiting for rabbitmq; sleep 2; done"]
       containers:
       - name: main-service
         image: arthurp2003/remailder-manager:latest

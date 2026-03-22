@@ -63,6 +63,12 @@ if ! command -v kind &> /dev/null; then
     sudo mv ./kind /usr/local/bin/kind
 fi
 
+# 6.5 Instalare Helm
+if ! command -v helm &> /dev/null; then
+    echo "📦 Instalare Helm..."
+    curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+fi
+
 # 7. Cluster kind
 CLUSTER_NAME="remailder-cluster"
 if ! kind get clusters | grep -q "^$CLUSTER_NAME$"; then
@@ -70,8 +76,31 @@ if ! kind get clusters | grep -q "^$CLUSTER_NAME$"; then
     kind create cluster --name "$CLUSTER_NAME"
 fi
 
+# 7.5 Instalare Loki Stack (Loki + Promtail + Grafana + Prometheus)
+if ! helm list | grep -q "loki"; then
+    echo "📊 Instalare Stack de Logging și Monitorizare..."
+    helm repo add grafana https://grafana.github.io/helm-charts
+    helm repo update
+    
+    helm upgrade --install loki grafana/loki-stack \
+        --set grafana.enabled=true \
+        --set prometheus.enabled=true \
+        --set loki.persistence.enabled=false \
+        --set prometheus.server.persistentVolume.enabled=false \
+        --set grafana.sidecar.dashboards.enabled=true \
+        --set grafana.sidecar.dashboards.label=grafana_dashboard \
+        --set grafana.sidecar.dashboards.labelValue="1" \
+        --set grafana.sidecar.dashboards.searchNamespace=ALL
+fi
+
+# 7.6 Încărcare automată Dashboard
+echo "📥 Încărcare dashboard preconfigurat..."
+kubectl delete configmap remailder-dashboards --ignore-not-found
+kubectl create configmap remailder-dashboards --from-file=kubernetes/infra/dashboards/final-dashboard.json
+kubectl label configmap remailder-dashboards grafana_dashboard=1
+
 # 8. Curățare porturi și Secrete
-sudo fuser -k 8000/tcp 5432/tcp 2>/dev/null
+sudo fuser -k 8000/tcp 8001/tcp 5432/tcp 15672/tcp 8080/tcp 3000/tcp 2>/dev/null
 pkill -f "kubectl port-forward" 2>/dev/null
 
 if [ ! -f .env ]; then
@@ -87,10 +116,8 @@ kubectl apply -f kubernetes/infra/postgres-pvc.yaml
 kubectl apply -f kubernetes/infra/postgres.yaml
 kubectl apply -f kubernetes/infra/adminer.yaml
 kubectl apply -f kubernetes/infra/rabbitmq.yaml
-sleep 3
 kubectl apply -f kubernetes/apps/io-service.yaml
 kubectl rollout restart deployment io-service
-sleep 3
 kubectl apply -f kubernetes/apps/main-service.yaml
 kubectl rollout restart deployment main-service
 
@@ -98,10 +125,15 @@ kubectl rollout restart deployment main-service
 echo "⏳ Așteptare Pod-uri..."
 kubectl wait --for=condition=ready pod -l app=io-service --timeout=180s
 kubectl wait --for=condition=ready pod -l app=main-service --timeout=180s
+echo "⏳ Așteptare Grafana (poate dura câteva minute la prima rulare)..."
+kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=grafana --timeout=300s
 kubectl port-forward svc/io-service 8000:8000 > /dev/null 2>&1 &
 kubectl port-forward svc/main-service 8001:8001 > /dev/null 2>&1 &
 kubectl port-forward svc/postgres-db 5432:5432 > /dev/null 2>&1 &
 kubectl port-forward svc/rabbitmq-service 15672:15672 > /dev/null 2>&1 &
 kubectl port-forward svc/adminer-service 8080:8080 > /dev/null 2>&1 &
+kubectl port-forward svc/loki-grafana 3000:80 > /dev/null 2>&1 &
 
+GRAFANA_PASS=$(kubectl get secret loki-grafana -o jsonpath="{.data.admin-password}" | base64 --decode)
 echo "✨ Setup finalizat!"
+echo "📊 Grafana: http://localhost:3000 (User: admin | Pass: $GRAFANA_PASS)"
