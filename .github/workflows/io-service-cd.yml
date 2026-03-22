@@ -2,6 +2,7 @@ name: Build and Push IO Service
 
 on:
   push:
+    branches: [ "main" ]
     paths:
       - 'src/io-service/**'
       - '.github/workflows/io-service-cd.yml'
