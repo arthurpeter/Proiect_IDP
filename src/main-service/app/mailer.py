@@ -3,12 +3,12 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from .config import settings
 
-def send_email_sync(to_email: str, subject: str, body: str) -> bool:
+def send_email_sync(to_email: str, subject: str, body: str, is_html: bool = True) -> bool:
     msg = MIMEMultipart()
     msg["From"] = f"Remailder <{settings.SMTP_SENDER}>"
     msg["To"] = to_email
     msg["Subject"] = subject
-    msg.attach(MIMEText(body, "plain"))
+    msg.attach(MIMEText(body, "html" if is_html else "plain"))
 
     try:
         server = smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT)

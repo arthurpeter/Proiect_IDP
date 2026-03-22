@@ -5,7 +5,9 @@ from contextlib import asynccontextmanager
 from pydantic import BaseModel
 from fastapi import FastAPI, Header, HTTPException
 import aio_pika
+import httpx
 
+from .templates import EMAIL_TEMPLATES
 from .config import settings
 from .worker import email_consumer
 
@@ -25,6 +27,7 @@ class EmailRequest(BaseModel):
     subject: str
     body: str
     scheduled_at: datetime
+    is_html: bool = True
 
 @app.post("/schedule")
 async def schedule_email(
@@ -74,7 +77,8 @@ async def schedule_email(
                 "user_id": x_user_id,
                 "to": payload.to,
                 "subject": payload.subject,
-                "body": payload.body
+                "body": payload.body,
+                "is_html": payload.is_html
             }
 
             await delayed_exchange.publish(
@@ -91,3 +95,21 @@ async def schedule_email(
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+
+@app.get("/history")
+async def get_my_history(
+    x_user_id: int = Header(..., alias="X-User-Id")
+):
+    async with httpx.AsyncClient() as client:
+        response = await client.get(f"{settings.IO_SERVICE_URL}/logs/{x_user_id}")
+    
+    if response.status_code != 200:
+        raise HTTPException(status_code=500, detail="Could not fetch history")
+        
+    return response.json()
+
+@app.get("/templates")
+async def get_all_templates():
+    """Returns the entire template catalog in one go for the UI to handle."""
+    return EMAIL_TEMPLATES

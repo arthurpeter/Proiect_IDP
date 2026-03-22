@@ -19,7 +19,7 @@ async def email_consumer():
                 data = json.loads(message.body.decode())
                 print(f"Sending email to {data['to']} now!")
 
-                success = send_email_sync(data["to"], data["subject"], data["body"])
+                success = send_email_sync(data["to"], data["subject"], data["body"], is_html=data.get("is_html", True))
                 status = "sent" if success else "failed"
 
                 update_msg = {
