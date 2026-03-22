@@ -22,6 +22,10 @@ app = FastAPI(title="Remailder Main Manager", lifespan=lifespan)
 
 # --- Routes ---
 
+@app.get("/health")
+async def health():
+    return {"status": "ok", "python_version": "3.12"}
+
 class EmailRequest(BaseModel):
     to: str
     subject: str

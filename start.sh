@@ -137,3 +137,4 @@ kubectl port-forward svc/loki-grafana 3000:80 > /dev/null 2>&1 &
 GRAFANA_PASS=$(kubectl get secret loki-grafana -o jsonpath="{.data.admin-password}" | base64 --decode)
 echo "✨ Setup finalizat!"
 echo "📊 Grafana: http://localhost:3000 (User: admin | Pass: $GRAFANA_PASS)"
+echo "Adminer: http://localhost:8080 (Server: postgres-db | User: remailder_admin | Pass: $(grep POSTGRES_PASSWORD .env | cut -d '=' -f2) | Database: remailder_db)"

@@ -1,0 +1,131 @@
+{
+  "info": {
+    "_postman_id": "eab83f35-e3f6-4037-b380-ecdffa7e0ec9",
+    "name": "main-service",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "27570931"
+  },
+  "item": [
+    {
+      "name": "health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8001/health",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8001",
+          "path": [
+            "health"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "schedule_mail",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-User-Id",
+            "value": "1",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"to\": \"arthurcristian.peter@gmail.com\",\n  \"subject\": \"HTML Content Test\",\n  \"body\": \"<div style=\\\"font-family: sans-serif; border: 1px solid #e0d4f1; padding: 20px; border-radius: 15px; background-color: #f9f6ff;\\\"><h2 style=\\\"color: #6f42c1;\\\">Hello!</h2><p>This is a <b>test</b> to verify that the <i>is_html</i> flag works correctly in your service.</p><hr><p style=\\\"font-size: 12px; color: #666;\\\">Sent via Remailder Scheduler</p></div>\",\n  \"scheduled_at\": \"2026-03-21T15:00:00Z\",\n  \"is_html\": true\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:8001/schedule",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8001",
+          "path": [
+            "schedule"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "get_my_history",
+      "protocolProfileBehavior": {
+        "disableBodyPruning": true
+      },
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-User-Id",
+            "value": "1",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"to\": \"arthurcristian.peter@gmail.com\",\n  \"subject\": \"Hello Microservices!\",\n  \"body\": \"This was scheduled via RabbitMQ DLX.\",\n  \"scheduled_at\": \"2026-03-24T20:45:00+02:00\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:8001/history",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8001",
+          "path": [
+            "history"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "get_all_templates",
+      "protocolProfileBehavior": {
+        "disableBodyPruning": true
+      },
+      "request": {
+        "method": "GET",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"to\": \"arthurcristian.peter@gmail.com\",\n  \"subject\": \"Hello Microservices!\",\n  \"body\": \"This was scheduled via RabbitMQ DLX.\",\n  \"scheduled_at\": \"2026-03-24T20:45:00+02:00\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:8001/templates",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8001",
+          "path": [
+            "templates"
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}
