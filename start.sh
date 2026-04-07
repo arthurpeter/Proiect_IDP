@@ -7,12 +7,12 @@ if command -v dnf &> /dev/null; then
     PKG_MANAGER="dnf"
     INSTALL_CMD="sudo dnf install -y"
     KUBECTL_PKG="kubernetes-client"
-    DOCKER_PKG="moby-engine" # Pachetul standard pe Fedora
+    DOCKER_PKG="moby-engine"
 elif command -v apt-get &> /dev/null; then
     PKG_MANAGER="apt"
     INSTALL_CMD="sudo apt-get update && sudo apt-get install -y"
     KUBECTL_PKG="kubectl"
-    DOCKER_PKG="docker.io" # Pachetul standard pe Ubuntu
+    DOCKER_PKG="docker.io"
 else
     echo "❌ Manager de pachete nesuportat."
     exit 1
@@ -23,7 +23,6 @@ if ! command -v docker &> /dev/null; then
     echo "📦 Docker nu este instalat. Se instalează $DOCKER_PKG..."
     $INSTALL_CMD $DOCKER_PKG
     sudo systemctl enable --now docker
-    # Adăugăm utilizatorul în grupul docker pentru a nu mai folosi sudo ulterior
     sudo usermod -aG docker $USER
     echo "⚠️ Docker a fost instalat. S-ar putea să fie nevoie de logout/login pentru permisiuni."
 else
@@ -72,8 +71,8 @@ fi
 # 7. Cluster kind
 CLUSTER_NAME="remailder-cluster"
 if ! kind get clusters | grep -q "^$CLUSTER_NAME$"; then
-    echo "🏗️ Creare cluster kind..."
-    kind create cluster --name "$CLUSTER_NAME"
+    echo "🏗️ Creare cluster kind multi-nod..."
+    kind create cluster --name "$CLUSTER_NAME" --config kubernetes/infra/kind-config.yaml
 fi
 
 # 7.5 Instalare Loki Stack (Loki + Promtail + Grafana + Prometheus)
