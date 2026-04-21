@@ -21,6 +21,7 @@ spec:
     metadata:
       labels:
         app: adminer
+        network: data-net
     spec:
       containers:
       - name: adminer
