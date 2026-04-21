@@ -28,6 +28,14 @@ if ! command -v k3d &> /dev/null; then
     curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
 fi
 
+# 4.5 Instalare kubectl (dacă lipsește)
+if ! command -v kubectl &> /dev/null; then
+    echo "📦 Instalare kubectl..."
+    curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+    sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+    rm kubectl
+fi
+
 # 5. Creare Cluster Kubernetes (1 Manager, 2 Workers)
 CLUSTER_NAME="proiect-cluster"
 if k3d cluster list | grep -q "$CLUSTER_NAME"; then
