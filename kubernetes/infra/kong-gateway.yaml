@@ -1,0 +1,101 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kong-config
+data:
+  kong.yml: |
+    _format_version: "3.0"
+
+    services:
+      - name: auth-service
+        url: http://auth-service:8002
+        routes:
+          - name: auth-route
+            paths:
+              - /auth
+            strip_path: true
+            preserve_host: false
+
+      - name: main-service
+        url: http://main-service:8001
+        routes:
+          - name: main-route
+            paths:
+              - /main
+            strip_path: true
+            preserve_host: false
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kong-gateway
+spec:
+  type: ClusterIP
+  ports:
+    - name: proxy
+      port: 8000
+      targetPort: 8000
+    - name: admin
+      port: 8001
+      targetPort: 8001
+  selector:
+    app: kong-gateway
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kong-gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kong-gateway
+
+  template:
+    metadata:
+      labels:
+        app: kong-gateway
+        network: public-net
+
+    spec:
+      initContainers:
+      - name: wait-for-auth
+        image: busybox:1.28
+        command: ['sh', '-c', "until nc -zv auth-service 8002; do echo waiting for auth-service; sleep 2; done"]
+      - name: wait-for-main
+        image: busybox:1.28
+        command: ['sh', '-c', "until nc -zv main-service 8001; do echo waiting for main-service; sleep 2; done"]
+      containers:
+      - name: kong
+        image: kong:3.9
+        env:
+        - name: KONG_DATABASE
+          value: "off"
+        - name: KONG_DECLARATIVE_CONFIG
+          value: "/etc/kong/kong.yml"
+        - name: KONG_PROXY_ACCESS_LOG
+          value: "/dev/stdout"
+        - name: KONG_ADMIN_ACCESS_LOG
+          value: "/dev/stdout"
+        - name: KONG_PROXY_ERROR_LOG
+          value: "/dev/stderr"
+        - name: KONG_ADMIN_ERROR_LOG
+          value: "/dev/stderr"
+        - name: KONG_ADMIN_LISTEN
+          value: "0.0.0.0:8001"
+        - name: KONG_PROXY_LISTEN
+          value: "0.0.0.0:8000"
+        ports:
+        - containerPort: 8000
+          name: proxy
+        - containerPort: 8001
+          name: admin
+        volumeMounts:
+        - name: kong-config-volume
+          mountPath: /etc/kong
+      volumes:
+      - name: kong-config-volume
+        configMap:
+          name: kong-config

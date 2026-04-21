@@ -99,7 +99,7 @@ kubectl create configmap remailder-dashboards --from-file=kubernetes/infra/dashb
 kubectl label configmap remailder-dashboards grafana_dashboard=1
 
 # 8. Curățare porturi și Secrete
-sudo fuser -k 8000/tcp 8001/tcp 5432/tcp 15672/tcp 8080/tcp 3000/tcp 2>/dev/null
+sudo fuser -k 8000/tcp 8001/tcp 8002/tcp 5432/tcp 15672/tcp 8080/tcp 3000/tcp 3001/tcp 8443/tcp 9000/tcp 2>/dev/null
 pkill -f "kubectl port-forward" 2>/dev/null
 
 if [ ! -f .env ]; then
@@ -120,20 +120,46 @@ kubectl rollout restart deployment io-service
 kubectl apply -f kubernetes/apps/main-service.yaml
 kubectl rollout restart deployment main-service
 
+# 9.5 Aplicare Manifeste K8s - Componente Mihai
+kubectl apply -f kubernetes/apps/auth-deploy.yaml
+kubectl rollout restart deployment auth-service
+kubectl apply -f kubernetes/apps/front-deploy.yaml
+kubectl rollout restart deployment frontend-ui
+kubectl apply -f kubernetes/infra/kong-gateway.yaml
+kubectl rollout restart deployment kong-gateway
+kubectl apply -f kubernetes/infra/portainer.yaml
+kubectl rollout restart deployment portainer
+kubectl apply -f kubernetes/infra/network-topology.yaml
+
 # 10. Așteptare și Port-forward
 echo "⏳ Așteptare Pod-uri..."
 kubectl wait --for=condition=ready pod -l app=io-service --timeout=180s
 kubectl wait --for=condition=ready pod -l app=main-service --timeout=180s
+kubectl wait --for=condition=ready pod -l app=auth-service --timeout=180s
+kubectl wait --for=condition=ready pod -l app=frontend-ui --timeout=180s
+kubectl wait --for=condition=ready pod -l app=kong-gateway --timeout=180s
+kubectl wait --for=condition=ready pod -l app=portainer --timeout=180s
 echo "⏳ Așteptare Grafana (poate dura câteva minute la prima rulare)..."
 kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=grafana --timeout=300s
 kubectl port-forward svc/io-service 8000:8000 > /dev/null 2>&1 &
 kubectl port-forward svc/main-service 8001:8001 > /dev/null 2>&1 &
+kubectl port-forward svc/auth-service 8002:8002 > /dev/null 2>&1 &
 kubectl port-forward svc/postgres-db 5432:5432 > /dev/null 2>&1 &
 kubectl port-forward svc/rabbitmq-service 15672:15672 > /dev/null 2>&1 &
 kubectl port-forward svc/adminer-service 8080:8080 > /dev/null 2>&1 &
 kubectl port-forward svc/loki-grafana 3000:80 > /dev/null 2>&1 &
+kubectl port-forward svc/kong-gateway 8443:8000 > /dev/null 2>&1 &
+kubectl port-forward svc/frontend-ui 3001:80 > /dev/null 2>&1 &
+kubectl port-forward svc/portainer-service 9000:9000 > /dev/null 2>&1 &
 
 GRAFANA_PASS=$(kubectl get secret loki-grafana -o jsonpath="{.data.admin-password}" | base64 --decode)
 echo "✨ Setup finalizat!"
-echo "📊 Grafana: http://localhost:3000 (User: admin | Pass: $GRAFANA_PASS)"
-echo "Adminer: http://localhost:8080 (Server: postgres-db | User: remailder_admin | Pass: $(grep POSTGRES_PASSWORD .env | cut -d '=' -f2) | Database: remailder_db)"
+echo "═══════════════════════════════════════════════════"
+echo "🌐 Frontend UI:   http://localhost:3001"
+echo "🔐 Auth Service:  http://localhost:8002"
+echo "🚪 Kong Gateway:  http://localhost:8443"
+echo "📊 Grafana:       http://localhost:3000 (User: admin | Pass: $GRAFANA_PASS)"
+echo "🗄️  Adminer:       http://localhost:8080 (Server: postgres-db | User: remailder_admin | Pass: $(grep POSTGRES_PASSWORD .env | cut -d '=' -f2) | DB: remailder_db)"
+echo "📦 Portainer:     http://localhost:9000"
+echo "🐇 RabbitMQ:      http://localhost:15672 (User: guest | Pass: guest)"
+echo "═══════════════════════════════════════════════════"
