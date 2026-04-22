@@ -95,6 +95,7 @@ kubectl apply -f kubernetes/infra/postgres-pvc.yaml
 kubectl apply -f kubernetes/infra/postgres.yaml
 kubectl apply -f kubernetes/infra/adminer.yaml
 kubectl apply -f kubernetes/infra/rabbitmq.yaml
+kubectl apply -f kubernetes/apps/caddy-config.yaml
 kubectl apply -f kubernetes/apps/io-service.yaml
 kubectl apply -f kubernetes/apps/main-service.yaml
 kubectl apply -f kubernetes/apps/auth-deploy.yaml
