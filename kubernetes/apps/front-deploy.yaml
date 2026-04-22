@@ -4,7 +4,12 @@ metadata:
   name: frontend-ui
 spec:
   ports:
-    - port: 80
+  - port: 80
+    targetPort: 80
+    name: http
+  - port: 443
+    targetPort: 443
+    name: https
   selector:
     app: frontend-ui
 
@@ -29,6 +34,14 @@ spec:
       containers:
       - name: frontend-ui
         image: arthurp2003/remailder-ui:latest
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
         ports:
         - containerPort: 80
+          name: http
+
+      - name: https-shield
+        image: caddy:2-alpine
+        command: ["caddy", "reverse-proxy", "--from", ":443", "--to", "localhost:80", "--internal-certs"]
+        ports:
+        - containerPort: 443
+          name: https

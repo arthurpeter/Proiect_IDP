@@ -114,7 +114,6 @@ kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=grafana --timeo
 echo "🔌 Mapare porturi pe interfața locală a rețelei..."
 kubectl port-forward --address 0.0.0.0 svc/kong-gateway 8443:8000 > /dev/null 2>&1 &
 kubectl port-forward --address 0.0.0.0 svc/frontend-ui 3001:80 > /dev/null 2>&1 &
-kubectl port-forward --address 0.0.0.0 svc/frontend-ui 3002:443 > /dev/null 2>&1 &
 kubectl port-forward --address 0.0.0.0 svc/portainer-service 9000:9000 > /dev/null 2>&1 &
 kubectl port-forward --address 0.0.0.0 svc/adminer-service 8080:8080 > /dev/null 2>&1 &
 kubectl port-forward --address 0.0.0.0 svc/rabbitmq-service 15672:15672 > /dev/null 2>&1 &
@@ -133,10 +132,10 @@ echo "Pentru a demonstra profesorului arhitectura, rulează:"
 echo "   kubectl get nodes"
 echo ""
 echo "Folosește link-urile de mai jos din browserul PC-ului tău:"
-echo "🌐 Frontend UI:   http://$IP_LOCAL:3001"
-echo "🚪 Kong Gateway:  http://$IP_LOCAL:8443"
-echo "📊 Grafana:       http://$IP_LOCAL:3000 (User: admin | Pass: $GRAFANA_PASS)"
-echo "🗄️  Adminer:       http://$IP_LOCAL:8080 (Server: postgres-db | User: remailder_admin | Pass: $DB_PASS | DB: remailder_db)"
-echo "📦 Portainer:     http://$IP_LOCAL:9000"
-echo "🐇 RabbitMQ:      http://$IP_LOCAL:15672 (User: guest | Pass: guest)"
+echo "🌐 Frontend UI:   https://$IP_LOCAL:3001"
+echo "🚪 Kong Gateway:  https://$IP_LOCAL:8443"
+echo "📊 Grafana:       https://$IP_LOCAL:3000 (User: admin | Pass: $GRAFANA_PASS)"
+echo "🗄️  Adminer:       https://$IP_LOCAL:8080 (Server: postgres-db | User: remailder_admin | Pass: $DB_PASS | DB: remailder_db)"
+echo "📦 Portainer:     https://$IP_LOCAL:9000"
+echo "🐇 RabbitMQ:      https://$IP_LOCAL:15672 (User: guest | Pass: guest)"
 echo "═══════════════════════════════════════════════════"
