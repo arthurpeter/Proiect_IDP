@@ -41,16 +41,14 @@ spec:
 
       - name: https-shield
         image: caddy:2-alpine
-        env:
-        - name: MY_DOMAIN
-          value: "idp-proj.go.ro"
-        command: ["/bin/sh", "-c"]
-        args:
-          - |
-            echo "$MY_DOMAIN {
-                reverse_proxy localhost:80
-            }" > /etc/caddy/Caddyfile;
-            caddy run --config /etc/caddy/Caddyfile --adapter caddyfile
         ports:
         - containerPort: 443
-          name: https
+        volumeMounts:
+        - name: caddy-config-vol
+          mountPath: /etc/caddy/Caddyfile
+          subPath: Caddyfile
+      
+      volumes:
+      - name: caddy-config-vol
+        configMap:
+          name: caddy-config
