@@ -5,6 +5,6 @@ metadata:
 data:
   Caddyfile: |
     idp-proj.go.ro {
-        reverse_proxy localhost:80
-        tls internal
+      reverse_proxy localhost:80
+      tls internal
     }
