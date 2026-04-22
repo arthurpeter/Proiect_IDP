@@ -41,7 +41,7 @@ spec:
 
       - name: https-shield
         image: caddy:2-alpine
-        command: ["caddy", "reverse-proxy", "--from", "idp-proj.go.ro", "--to", "localhost:80"]
+        command: ["sh", "-c", "echo 'idp-proj.go.ro { reverse_proxy localhost:80 }' > Caddyfile && caddy run --config Caddyfile"]
         ports:
         - containerPort: 443
           name: https
