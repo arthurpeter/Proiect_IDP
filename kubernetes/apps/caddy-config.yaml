@@ -5,10 +5,9 @@ metadata:
 data:
   Caddyfile: |
     {
-      auto_https disable_redirects
+      email arthurcristian.peter@gmail.com 
     }
 
-    idp-proj.go.ro:443 {
-      tls internal
+    idp-proj.go.ro {
       reverse_proxy localhost:80
     }
